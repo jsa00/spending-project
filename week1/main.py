@@ -12,6 +12,12 @@ df = pd.read_csv(file_path, encoding="utf-8-sig")
 
 rows, cols = df.shape
 print(f"데이터 로드 완료: {rows}행 x {cols}열")
-print("-" * 30)
+print("=" * 30)
 
-print(df.head())
+print("[컬럼 정보 (상세 자료형)]")
+for col_name, dtype in df.dtypes.items():
+    print(f"- {col_name}: {dtype}")
+print("=" * 30)
+
+print("[데이터 미리보기]")
+print(df.head(5))
