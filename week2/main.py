@@ -13,6 +13,9 @@ def main():
     # 2. 날짜 데이터 정제 및 파생 컬럼 생성
     df = parse_dates(df)
 
+    # 3. 카테고리 표준화
+    df = standardize_categories(df)
+
 def draw_line(char="=", length=40):
     print(char * length)
 
@@ -39,11 +42,26 @@ def parse_dates(df):
     df["month"] = df["date"].dt.month
     df["day"] = df["date"].dt.day
     print("- 파생 컬럼 생성 완료: year, month, day")
-    print()
+    draw_line()
+    return df
 
-    print("[생성된 파생 컬럼 미리보기]")
-    print(df[["date", "year", "month", "day"]].head(5))
+def standardize_categories(df):
+    """category 컬럼의 앞뒤 공백을 제거하고 허용 목록 외의 값은 '기타'로 변경"""
+    print("[카테고리 표준화]")
 
+    allowed_categories = ["식비", "교통", "쇼핑", "의료", "문화", "기타"]
+
+    def clean_category(val):
+        if isinstance(val, str):
+            cleaned = val.strip()
+
+            if cleaned in allowed_categories:
+                return cleaned
+        return "기타"
+    
+    df["category"] = df["category"].apply(clean_category)
+    new_categories = df["category"].value_counts()
+    print(f"- 표준화된 카테고리별 건수 집계:\n{new_categories}")
     draw_line()
     return df
 
