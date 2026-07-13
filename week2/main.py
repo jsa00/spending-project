@@ -10,11 +10,14 @@ def main():
     # 1. 데이터 로드
     df = load_data(DATA_PATH)
 
-    # 2. 날짜 데이터 정제 및 파생 컬럼 생성
+    # 2. 날짜 데이터 정제 및 파생 컬럼
     df = parse_dates(df)
 
     # 3. 카테고리 표준화
-    df = standardize_categories(df)
+    df = standardize_category(df)
+
+    # 4. 금액 구간 컬럼
+    df = add_amount_level(df)
 
 def draw_line(char="=", length=40):
     print(char * length)
@@ -45,7 +48,7 @@ def parse_dates(df):
     draw_line()
     return df
 
-def standardize_categories(df):
+def standardize_category(df):
     """category 컬럼의 앞뒤 공백을 제거하고 허용 목록 외의 값은 '기타'로 변경"""
     print("[카테고리 표준화]")
 
@@ -62,6 +65,27 @@ def standardize_categories(df):
     df["category"] = df["category"].apply(clean_category)
     new_categories = df["category"].value_counts()
     print(f"- 표준화된 카테고리별 건수 집계:\n{new_categories}")
+    draw_line()
+    return df
+
+def add_amount_level(df):
+    """amount 컬럼을 기준에 따라 소액, 중액, 고액 구간으로 분류"""
+    print("[금액 구간 파생 컬럼 생성]")
+
+    def get_amount_level(val):
+        if pd.isna(val):
+            return "미분류"
+            
+        if val < 10000:
+            return "소액"
+        elif val < 50000:
+            return "중액"
+        else:
+            return "고액"
+        
+    df["amount_level"] = df["amount"].apply(get_amount_level)
+    level_counts = df["amount_level"].value_counts()
+    print(f"- 금액 구간별 건수 집계:\n{level_counts}")
     draw_line()
     return df
 
