@@ -5,6 +5,25 @@ import pandas as pd
 
 DATA_PATH = "data/spending.csv"
 
+# 메인 제어 흐름
+def main():
+    """전체 데이터 분석 파이프라인 순서대로 호출"""
+    # 1. 데이터 로드 및 초기 구조 확인
+    df = load_data(DATA_PATH)
+    check_data_structure(df)
+    
+    # 2. 카테고리별 통계 및 결제수단 건수
+    analyze_categories(df)
+    calculate_category_averages(df)
+    analyze_payments(df)
+    
+    # 3. 결측치 현황 분석
+    diagnose_missing_values(df)
+    
+    # 4. 데이터 수치 연산 분석 및 교차 검증
+    np_stats = analyze_amount_statistics(df)
+    verify_with_pandas_describe(df, np_stats)
+
 def draw_line(char="=", length=40):
     print(char * length)
 
@@ -142,25 +161,6 @@ def verify_with_pandas_describe(df, np_stats):
     print(f"- 최솟값 검증: {min_match}")
     print(f"- 최댓값 검증: {max_match}")
     draw_line()
-
-# 메인 제어 흐름
-def main():
-    """전체 데이터 분석 파이프라인 순서대로 호출"""
-    # 1. 데이터 로드 및 초기 구조 확인
-    df = load_data(DATA_PATH)
-    check_data_structure(df)
-    
-    # 2. 카테고리별 통계 및 결제수단 건수
-    analyze_categories(df)
-    calculate_category_averages(df)
-    analyze_payments(df)
-    
-    # 3. 결측치 현황 분석
-    diagnose_missing_values(df)
-    
-    # 4. 데이터 수치 연산 분석 및 교차 검증
-    np_stats = analyze_amount_statistics(df)
-    verify_with_pandas_describe(df, np_stats)
 
 if __name__ == "__main__":
     main()
