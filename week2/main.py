@@ -139,8 +139,6 @@ def save_data(df, file_path):
     df_save = df.copy()
     
     df_save["date"] = df_save["date"].dt.strftime("%Y-%m-%d")
-    print("- 날짜 데이터(date)를 'YYYY-MM-DD' 문자열로 변환 완료")
-
     df_save.to_csv(file_path, index=False, encoding="utf-8-sig")
     print(f"- 저장 완료: '{file_path}'")
     draw_line()
