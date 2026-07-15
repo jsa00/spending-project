@@ -22,6 +22,9 @@ def main():
     # 4. 결측·이상값 처리
     df = clean_values(df)
 
+    # 5. 간단 집계로 확인
+    show_summary(df)
+
 def draw_line(char="=", length=40):
     print(char * length)
 
@@ -111,6 +114,22 @@ def clean_values(df):
     draw_line()
     
     return df
+
+def show_summary(df):
+    """정제 완료된 데이터를 바탕으로 월별, 카테고리별 지출 요약 출력"""
+    print("[데이터 요약 통계]")
+
+    # 1. 월별 총 지출액 계산
+    # .map("{:,}".format) 콤마 포맷 적용
+    monthly_total = df.groupby("month")["amount"].sum().map("{:,}".format)
+    print(f"- 월별 총 지출액: \n{monthly_total}")
+    print()
+
+    # 2. 카테고리별 총 지출액 계산 (ascending=False로 금액이 높은 순 정렬)
+    category_total = df.groupby("category")["amount"].sum().sort_values(ascending=False).map("{:,}".format)
+    print(f"- 카테고리별 총 지출액 (많은 순): \n{category_total}")
+    
+    draw_line()
 
 if __name__ == "__main__":
     main()
