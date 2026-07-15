@@ -7,17 +7,20 @@ DATA_PATH = "data/spending.csv"
 # 메인 제어 흐름
 def main():
     """전체 데이터 분석 파이프라인 순서대로 호출"""
-    # 1. 데이터 로드
+    # 0. 데이터 로드
     df = load_data(DATA_PATH)
 
-    # 2. 날짜 데이터 정제 및 파생 컬럼
+    # 1. 날짜 데이터 정제 및 파생 컬럼
     df = parse_dates(df)
 
-    # 3. 카테고리 표준화
+    # 2. 카테고리 표준화
     df = standardize_category(df)
 
-    # 4. 금액 구간 컬럼
+    # 3. 금액 구간 컬럼
     df = add_amount_level(df)
+
+    # 4. 결측·이상값 처리
+    df = clean_values(df)
 
 def draw_line(char="=", length=40):
     print(char * length)
@@ -87,6 +90,26 @@ def add_amount_level(df):
     level_counts = df["amount_level"].value_counts()
     print(f"- 금액 구간별 건수 집계:\n{level_counts}")
     draw_line()
+    return df
+
+def clean_values(df):
+    """메모 결측치를 채우고, 금액이 0 이하이거나 날짜 변환에 실패한 행을 제거"""
+    print("[결측·이상값 처리]")
+
+    df["memo"] = df["memo"].fillna("")
+
+    before_count = len(df)
+    df = df[df["amount"] > 0]
+    df = df.dropna(subset=["date"])
+    df = df.reset_index(drop=True)
+
+    after_count = len(df)
+    removed_count = before_count - after_count
+    
+    print(f"- 정제 전 데이터 크기: {before_count}행")
+    print(f"- 정제 후 데이터 크기: {after_count}행 (총 {removed_count}개 행 제거됨)")
+    draw_line()
+    
     return df
 
 if __name__ == "__main__":
