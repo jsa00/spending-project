@@ -15,6 +15,9 @@ def main():
     # 1. DB 연결 및 테이블 생성
     init_db()
 
+    # 2. 정제 데이터 저장
+    save_to_db(df)
+
 def load_clean_data(file_path):
     """지정된 경로에서 정제된 CSV 데이터 로드"""
     if not os.path.exists(file_path):
@@ -54,6 +57,30 @@ def init_db():
     conn.commit()
     conn.close()
     print("테이블 생성 완료")
+
+def save_to_db(df):
+    """정제 완료된 데이터를 SQLite 테이블에 저장, 저장된 행 수 검증"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    df_db = df.copy()
+    db_columns = ["date", "category", "amount", "memo", "year", "month", "day", "amount_level"]
+    df_db = df_db[db_columns]
+
+    df_db["year"] = df_db["year"].astype(float).astype(int)
+    df_db["month"] = df_db["month"].astype(float).astype(int)
+    df_db["day"] = df_db["day"].astype(float).astype(int)
+
+    df_db.to_sql("spendings", conn, if_exists="append", index=False)
+    
+    inserted_rows = len(df_db)
+    cursor.execute("SELECT COUNT(*) FROM spendings")
+    total_rows = cursor.fetchone()[0]
+    print(f"{inserted_rows}행 저장 완료 (DB 내 행 수: {total_rows})")
+
+    conn.commit()
+    conn.close()
+    print()
 
 if __name__ == "__main__":
     main()
