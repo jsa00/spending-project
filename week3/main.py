@@ -18,6 +18,9 @@ def main():
     # 2. 정제 데이터 저장
     save_to_db(df)
 
+    # 3. 기본 조회(SELECT)
+    query_db()
+
 def load_clean_data(file_path):
     """지정된 경로에서 정제된 CSV 데이터 로드"""
     if not os.path.exists(file_path):
@@ -79,6 +82,30 @@ def save_to_db(df):
     print(f"{inserted_rows}행 저장 완료 (DB 내 행 수: {total_rows})")
 
     conn.commit()
+    conn.close()
+    print()
+
+def query_db():
+    """pd.read_sql을 사용하여 데이터베이스 데이터를 조회하고 출력"""
+    print("=== 카테고리별 집계 ===")
+
+    conn = sqlite3.connect(DB_PATH)
+    pd.set_option('display.float_format', '{:.0f}'.format)
+    df_top5 = pd.read_sql("SELECT * FROM spendings LIMIT 5", conn)
+    
+    summary_query = """
+    SELECT 
+        category,
+        COUNT(*) AS '건수',
+        SUM(amount) AS '총지출액',
+        AVG(amount) AS '평균지출액',
+        MAX(amount) AS '최대지출액'
+    FROM spendings
+    GROUP BY category;
+    """
+    df_summary = pd.read_sql(summary_query, conn)
+    print(df_summary.to_string(index=False))
+
     conn.close()
     print()
 
