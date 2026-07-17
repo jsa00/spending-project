@@ -21,6 +21,9 @@ def main():
     # 3. 기본 조회(SELECT)
     query_db()
 
+    # 4. 조건 조회(WHERE + ORDER BY)
+    query_db_condition()
+
 def load_clean_data(file_path):
     """지정된 경로에서 정제된 CSV 데이터 로드"""
     if not os.path.exists(file_path):
@@ -52,7 +55,8 @@ def init_db():
         year INTEGER,                           -- 년도 (분석용)
         month INTEGER,                          -- 월 (분석용)
         day INTEGER,                            -- 일 (분석용)
-        amount_level TEXT                       -- 금액 구간 (소액/중액/고액)
+        amount_level TEXT,                      -- 금액 구간 (소액/중액/고액)
+        payment TEXT                            -- 결제 수단
     );
     """
     cursor.execute(create_table_query)
@@ -67,7 +71,7 @@ def save_to_db(df):
     cursor = conn.cursor()
 
     df_db = df.copy()
-    db_columns = ["date", "category", "amount", "memo", "year", "month", "day", "amount_level"]
+    db_columns = ["date", "category", "amount", "memo", "year", "month", "day", "amount_level", "payment"]
     df_db = df_db[db_columns]
 
     df_db["year"] = df_db["year"].astype(float).astype(int)
@@ -101,12 +105,41 @@ def query_db():
         AVG(amount) AS '평균지출액',
         MAX(amount) AS '최대지출액'
     FROM spendings
-    GROUP BY category;
+    GROUP BY category
+    ORDER BY amount DESC;
     """
     df_summary = pd.read_sql(summary_query, conn)
     print(df_summary.to_string(index=False))
 
     conn.close()
+    print()
+
+def query_db_condition():
+    """WHERE로 조건(식비, 3만원 이상 카드 결제)을 걸고 ORDER BY로 정렬(금액 높은 순)해 원하는 데이터만 조회 출력"""
+    conn = sqlite3.connect(DB_PATH)
+    pd.set_option('display.float_format', '{:.0f}'.format)
+
+    # 특정 카테고리(예: 식비)를 금액 높은 순으로 조회
+    print("=== 식비 조회 (금액 높은 순) ===")
+    condition_category = """
+    SELECT * FROM spendings
+    WHERE category = '식비'
+    ORDER BY amount DESC;
+    """
+    df_category = pd.read_sql(condition_category, conn)
+    print(df_category.to_string(index=False))
+    print()
+
+    print("=== 3만원 이상 & 카드 결제 (금액 높은 순) ===")
+    condition_query = """
+    SELECT * FROM spendings 
+    WHERE amount >= 30000 
+        AND payment = '카드'
+    ORDER BY amount DESC;
+    """
+    df_condition = pd.read_sql(condition_query, conn)
+    print(df_condition.to_string(index=False))
+    print(f"- 3만원 이상 카드 결제 {len(df_condition)}건")
     print()
 
 if __name__ == "__main__":
