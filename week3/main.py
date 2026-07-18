@@ -22,7 +22,7 @@ def main():
     query_db()
 
     # 4. 조건 조회(WHERE + ORDER BY)
-    query_db_condition()
+    #query_db_condition()
 
     # 5. 집계 조회(GROUP BY)
     query_db_aggregation()
