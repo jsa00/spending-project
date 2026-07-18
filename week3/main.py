@@ -27,6 +27,9 @@ def main():
     # 5. 집계 조회(GROUP BY)
     query_db_aggregation()
 
+    # 6. Python vs SQL 검증
+    verify_with_python(df)
+
 def load_clean_data(file_path):
     """지정된 경로에서 정제된 CSV 데이터 로드"""
     if not os.path.exists(file_path):
@@ -166,6 +169,26 @@ def query_db_aggregation():
     
     conn.close()
     print()
+
+def verify_with_python(df):
+    """파이썬 계산 결과와 SQL 집계 결과를 하나로 합쳐서 일치 여부 검증"""
+    print("=== Python vs SQL 검증 ===")
+
+    conn = sqlite3.connect(DB_PATH)
+    df_py = df.groupby("category")["amount"].sum().reset_index()
+    df_py.columns = ["category", "총지출액_파이썬"]
+
+    sql_query = """
+    SELECT category, SUM(amount) AS '총지출액_SQL'
+    FROM spendings
+    GROUP BY category;
+    """
+    df_sql = pd.read_sql(sql_query, conn)
+    conn.close()
+
+    df_merged = pd.merge(df_py, df_sql, on="category")
+    is_match = (df_merged["총지출액_파이썬"].round(0) == df_merged["총지출액_SQL"].round(0)).all()
+    print(f"전체 카테고리 일치: {is_match}")
 
 if __name__ == "__main__":
     main()
