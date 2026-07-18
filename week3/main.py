@@ -24,6 +24,9 @@ def main():
     # 4. 조건 조회(WHERE + ORDER BY)
     query_db_condition()
 
+    # 5. 집계 조회(GROUP BY)
+    query_db_aggregation()
+
 def load_clean_data(file_path):
     """지정된 경로에서 정제된 CSV 데이터 로드"""
     if not os.path.exists(file_path):
@@ -140,6 +143,28 @@ def query_db_condition():
     df_condition = pd.read_sql(condition_query, conn)
     print(df_condition.to_string(index=False))
     print(f"- 3만원 이상 카드 결제 {len(df_condition)}건")
+    print()
+
+def query_db_aggregation():
+    """GROUP BY로 월별 지출을 집계"""
+    print("=== 월별 총 지출 ===")
+
+    conn = sqlite3.connect(DB_PATH)
+    pd.set_option('display.float_format', '{:.0f}'.format)
+
+    aggregation_query = """
+    SELECT 
+        month,
+        COUNT(*) AS '건수',
+        SUM(amount) AS '총지출액'
+    FROM spendings
+    GROUP BY month
+    ORDER BY month ASC;
+    """
+    df_aggregation = pd.read_sql(aggregation_query, conn)
+    print(df_aggregation.to_string(index=False))
+    
+    conn.close()
     print()
 
 if __name__ == "__main__":
