@@ -10,6 +10,9 @@ DB_PATH = "data/spending.db"
 # 메인 제어 흐름
 def main():
     """전체 데이터 분석 파이프라인 순서대로 호출"""
+    # 0. Pandas 출력 포맷 설정
+    pd.set_option('display.float_format', '{:.0f}'.format)
+
     # 1. 로드
     df = load_data(DATA_PATH)
     dfc = load_clean_data(NEW_DATA_PATH)
@@ -27,6 +30,10 @@ def main():
     # 4. 조회
     query_db()
     query_db_aggregation()
+
+    # (선택) 카드/현금 요일별 심화 분석
+    query_payment_by_month()
+    query_by_day_of_week()
 
     # 5. 검증
     verify_with_python(dfc)
@@ -187,7 +194,6 @@ def query_db():
     print("=== 카테고리별 집계 ===")
 
     conn = sqlite3.connect(DB_PATH)
-    pd.set_option('display.float_format', '{:.0f}'.format)
     
     summary_query = """
     SELECT 
@@ -211,7 +217,6 @@ def query_db_aggregation():
     print("=== 월별 총 지출 ===")
 
     conn = sqlite3.connect(DB_PATH)
-    pd.set_option('display.float_format', '{:.0f}'.format)
 
     aggregation_query = """
     SELECT 
@@ -247,6 +252,58 @@ def verify_with_python(dfc):
     dfc_merged = pd.merge(dfc_py, dfc_sql, on="category")
     is_match = (dfc_merged["총지출액_파이썬"].round(0) == dfc_merged["총지출액_SQL"].round(0)).all()
     print(f"전체 카테고리 일치: {is_match}")
+
+def query_payment_by_month():
+    """SQL 월별 카드 vs 현금 지출 금액 비교"""
+    print("=== 월별 결제 수단(카드 vs 현금) 지출 비교 ===")
+
+    conn = sqlite3.connect(DB_PATH)
+
+    payment_query = """
+    SELECT 
+        month AS '월',
+        SUM(CASE WHEN payment = '카드' THEN amount ELSE 0 END) AS '카드 지출',
+        SUM(CASE WHEN payment = '현금' THEN amount ELSE 0 END) AS '현금 지출',
+        SUM(amount) AS '합계'
+    FROM spendings
+    GROUP BY month
+    ORDER BY month ASC;
+    """
+    dfc_payment = pd.read_sql(payment_query, conn)
+    print(dfc_payment.to_string(index=False))
+
+    conn.close()
+    print()
+
+def query_by_day_of_week():
+    """요일별 건수, 평균, 총지출액 집계 출력"""
+    print("=== 요일별 지출 집계 (평균 및 총지출) ===")
+
+    conn = sqlite3.connect(DB_PATH)
+
+    day_query = """
+    SELECT 
+        CASE strftime('%w', date)
+            WHEN '0' THEN '일요일'
+            WHEN '1' THEN '월요일'
+            WHEN '2' THEN '화요일'
+            WHEN '3' THEN '수요일'
+            WHEN '4' THEN '목요일'
+            WHEN '5' THEN '금요일'
+            WHEN '6' THEN '토요일'
+        END AS '요일',
+        COUNT(*) AS '건수',
+        AVG(amount) AS '평균지출액',
+        SUM(amount) AS '총지출액'
+    FROM spendings
+    GROUP BY strftime('%w', date)
+    ORDER BY strftime('%w', date) ASC;
+    """
+    dfc_day = pd.read_sql(day_query, conn)
+    print(dfc_day.to_string(index=False))
+
+    conn.close()
+    print()
 
 if __name__ == "__main__":
     main()
